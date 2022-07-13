@@ -1,5 +1,5 @@
-from setuptools import find_packages
-from distutils.core import setup, Extension
+from setuptools import find_packages, setup
+#from distutils import setup
 import os
 import numpy
 import subprocess
@@ -9,7 +9,7 @@ from distutils.command.install import install
 
 
 VERSION = '0.0.0' 
-DESCRIPTION = ''
+DESCRIPTION = 'sdOB parameters'
 
 fh = open('README.md', 'r')
 LONG_DESCRIPTION = fh.read()

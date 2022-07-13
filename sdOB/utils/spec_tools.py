@@ -188,15 +188,16 @@ def interpolate_fluxrv(times, phase, flux_phase, tc0, period=None):
     return fluxes
 
 
-def rvcorr_spec(wave, flux, fluxerr, rv, wave_new=None, left=np.nan, right=np.nan, interp1d=None):
+def rvcorr_spec(wave, flux, fluxerr, rv, wave_new=None, left=np.nan, right=np.nan, interp1d=None, returnwvl=False):
     ''' correct spectrum with radial velocity
     parameters:
     ------------
     wave [1d array]
     flux [1d array]
     fluxerr [1d array]
-    barycorr [float] barycentric radial velocity in units of km/s
-    
+    wave_new [1d array] should be linear
+    rv [float] radial velocity in units of km/s
+    returnwvl: [bool] if true, only return the cerrected wave (log(lambda))
     returns:
     ----------
     flux_bc [1d array]
@@ -210,10 +211,10 @@ def rvcorr_spec(wave, flux, fluxerr, rv, wave_new=None, left=np.nan, right=np.na
     lgwvl = np.log(wvl)
     gamma =(1+beta)/(1-beta)
     _lgwvl = lgwvl + 0.5*np.log(gamma)
-    
-    if wave_new is None:
-       lgwvl = np.log(wvl)
-    else: lgwvl = np.log(wave_new)
+    if returnwvl: return _lgwvl/np.log(10)
+
+    if wave_new is not None:
+       lgwvl = np.log(wave_new)
     if interp1d is None:
        flux_bc = np.interp(lgwvl, _lgwvl, flux, left=left, right=right)
        err2 = np.interp(lgwvl, _lgwvl, fluxerr**2, left=left, right=right)
