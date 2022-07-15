@@ -70,24 +70,28 @@ def period2M(P, K1, i=90, e = 0):
     M = n**2 * a1**3/constants.G
     return M, a1
 
-def M2m2(M, m1, maxiter=2000):
+def M2m2(M, m1, maxiter=2000, x1=None):
     ''' calculate m2 by using M and m1
     parameters
     ------------
     M [float] the total mass (m1+m2) e.g. 1
     m1 [float] e.g. 1
     maxiter [int] the iteration of Newton method
+    x1: [float] see scipy.optimize.newton
     return
     ------
     m2 [float] mass of the secondary
     '''
     def f(x, M, m1):
-        f = x**3 - M*x**2 - 2*M*m1*x - M*m1**2
-        return f
-    try:
-        m2 = optimize.newton(f, 0,x1=m1, maxiter=maxiter, args=(M, m1))
-    except:
-        m2 = optimize.newton(f, 0,x1=2*m1, maxiter=maxiter, args=(M, m1))
+        y = x**3 - M*x**2 - 2*M*m1*x - M*m1**2
+        return y
+    if x1 is None:
+       try:
+           m2 = optimize.newton(f, 0,x1=m1, maxiter=maxiter, args=(M, m1))
+       except:
+           m2 = optimize.newton(f, 0,x1=2*m1, maxiter=maxiter, args=(M, m1))
+    else:
+       m2 = optimize.newton(f, 0,x1=x1, maxiter=maxiter, args=(M, m1))
     return m2
 
 def m1pkie2m2qa(m1, P, K1, i, e):
@@ -150,6 +154,48 @@ def m1qperiod2sma(m1, q, period):
     n2 = (2*np.pi/period)**2
     sma = (constants.G * M/n2)**(1./3.)
     return sma
+
+
+def binarymassfunc(P, K1):
+    '''$f = \frac{M^3_2\sin^3i}{(M_1+M_2)^2} = \frac{P_{\rm orb} K_1^3}{2\pi G}$
+    parameters:
+    --------------
+    P: [time units] period e.g. 1*units.day
+    K1: [velocity units] e.g. 10 * units.km/units.s
+    returns:
+    --------------
+    f: [mass units (Msun)] the binary mass function
+    '''
+    f = P*K1**3/2/np.pi/constants.G
+    return f.to('Msun')
+
+
+def m1bftom2(m1, bf, i=90, maxiter=2000, x1=None):
+    ''' calculate m2 by using m1 and binary mass functon
+    parameters:
+    ---------------
+    m1: [float] in units of Msun e.g. m1 =1, the mass of star1
+    bf: [float] in units of Msun e.g. bf =1, the binary mass function
+    i: [float] inclination of orbital  in units of degree
+    maxiter [int] the iteration of Newton method
+    x1: [float] see scipy.optimize.newton
+    returns:
+    --------------
+    m2: [float] in units of Msun
+    '''
+    sini3 = np.sin(np.deg2rad(i))**3
+    fsini = bf/sini3
+    def func(x, fsini, m1):
+        y = x**3 - fsini*(m1+x)**2
+        return y
+    if x1 is  None:
+       try:
+           m2 = optimize.newton(func, 0,x1=m1, maxiter=maxiter, args=(fsini, m1))
+       except:
+           m2 = optimize.newton(func, 0,x1=2*m1, maxiter=maxiter, args=(fsini, m1))
+    else:
+       m2 = optimize.newton(func, 0,x1=x1, maxiter=maxiter, args=(fsini, m1))
+    return m2
 
 def eR_Rochelobe(q):
     '''q is mass ratio (r_L1 : m1/m2)
