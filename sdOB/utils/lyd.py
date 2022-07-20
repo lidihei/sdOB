@@ -10,6 +10,7 @@ import xgboost as xgb
 import numpy as np
 from scipy.interpolate import griddata
 from scipy import ndimage
+import re
 
 
 def xgb_lyd(logTeff, logg, logZ, xi, model_dic = None):
@@ -68,7 +69,7 @@ class lydClaret():
     lydd = lydClaret(_data, _data_y)
     a1, a2, a3, a4, y = lydd.interpolate_lyd2(np.log10(30000), 4, 0)
     '''
-    def __init__(self, grid_eq4, grid_y):
+    def __init__(self, grid_eq4=None, grid_y=None):
         ''' coefficients for a 4-parameter limb-darkening law and the gravity 
         darkening coefficient, y, from the tables provided by Claret
         and Bloemen [(2011A&A...529A..75C)](http://cdsarc.u-strasbg.fr/viz-bin/qcat?J/A+A/529/A75)
@@ -79,23 +80,25 @@ class lydClaret():
         grid_eq4: [FITS_rec], the grid of 4-parameter limb-darkening law, e.g. grideq4 = fits.getdata('J_A+A_600_A30_table27.dat.gz.fits')
         grid_y: [FITS_rec], the grid of the gravity darkening coefficient, e,g, grid_y = fits.getdata('J_A+A_600_A30_table29.dat.gz.fits')
         '''
-        pointseq4 = np.zeros((len(grid_eq4), 4))
-        pointseq4[:, 0] = np.log10(grid_eq4['Teff'])
-        pointseq4[:, 1] = grid_eq4['logg']
-        pointseq4[:, 2] = grid_eq4['Z']
-        pointseq4[:, 3] = grid_eq4['xi']
-        self.grida1 = grid_eq4['eLSM']
-        self.grida2 = grid_eq4['fLSM']
-        self.grida3 = grid_eq4['ePCM']
-        self.grida4 = grid_eq4['fPCM']
-        self.pointseq4 = pointseq4
-        pointsy = np.zeros((len(grid_y), 4))
-        pointsy[:, 0] = grid_y['logTeff']
-        pointsy[:, 1] = grid_y['logg']
-        pointsy[:, 2] = grid_y['Z']
-        pointsy[:, 3] = grid_y['xi']
-        self.pointsy = pointsy
-        self.gridy = grid_y['y']
+        if grid_eq4 is not None:
+           pointseq4 = np.zeros((len(grid_eq4), 4))
+           pointseq4[:, 0] = np.log10(grid_eq4['Teff'])
+           pointseq4[:, 1] = grid_eq4['logg']
+           pointseq4[:, 2] = grid_eq4['Z']
+           pointseq4[:, 3] = grid_eq4['xi']
+           self.grida1 = grid_eq4['eLSM']
+           self.grida2 = grid_eq4['fLSM']
+           self.grida3 = grid_eq4['ePCM']
+           self.grida4 = grid_eq4['fPCM']
+           self.pointseq4 = pointseq4
+        if grid_eq4 is not None:
+           pointsy = np.zeros((len(grid_y), 4))
+           pointsy[:, 0] = grid_y['logTeff']
+           pointsy[:, 1] = grid_y['logg']
+           pointsy[:, 2] = grid_y['Z']
+           pointsy[:, 3] = grid_y['xi']
+           self.pointsy = pointsy
+           self.gridy = grid_y['y']
 
     def interpolate_lyd(self, logTe, logg, Z, Xi, **keywords):
         '''interpolate coefficients for a 4-parameter limb-darkening law (Claret 2017)
@@ -143,6 +146,124 @@ class lydClaret():
         y  = griddata(pointsy, self.gridy, points,  **keywords)
         return a1, a2, a3, a4, y
 
+    def interpolate_ldy3(self, teff, logg, Z, fix_xi =2, ldtab=None, ytab=None):
+        '''
+        interpolate limb-darknening coefficient, doppler beeming factor and gravity-darkening coefficient 
+        from Claret et al. 2017
+        ##------------------------------------------------
+        from sdOB.utils.lyd import claret_tab
+        fname_ldc = 'J_A+A_600_A30/table28.dat.gz'  
+        # downloaded from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse  
+        ldtab = claret_tab()
+        _ = ldtab.read_tab2017_ldc(fname_ldc)
+        _, _ = ldtab.fix_parameter(index = 3, fix_value=fix_xi)
+        _, _ = ldtab.create_pixeltypegrid()
+        
+        ##--------------------------------------------------
+        fname_y = 'J_A+A_600_A30/table29.dat.gz'  
+        # downloaded from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
+        ytab = claret_tab()
+        _ = ytab.read_tab2017_y(fname_y)
+        _, _ = ytab.fix_parameter(index = 3, fix_value=fix_xi)
+        _, _ = ytab.create_pixeltypegrid()
+        
+        paramters:
+        ---------------
+        teff, logg
+        returns:
+        a1, a2, a3, a4, y
+        ---------------
+        
+        '''
+        if type(teff) !=  np.ndarray: teff = np.array([teff])
+        if ldtab is None:
+           fname_ldc = 'J_A+A_600_A30/table28.dat.gz'  
+           # downloaded from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
+           
+           ldtab = claret_tab()
+           _ = ldtab.read_tab2017_ldc(fname_ldc)
+           _, _ = ldtab.fix_parameter(index = 3, fix_value=fix_xi)
+           _, _ = ldtab.create_pixeltypegrid()
+        
+        if ytab is None:
+           fname_y = 'J_A+A_600_A30/table29.dat.gz'  
+           # downloaded from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
+           ytab = claret_tab()
+           _ = ytab.read_tab2017_y(fname_y)
+           _, _ = ytab.fix_parameter(index = 3, fix_value=fix_xi)
+           _, _ = ytab.create_pixeltypegrid()
+            
+        p = np.ones((3, teff.shape[0]))
+        p[0] = logg
+        p[1] = np.log10(teff)
+        p[2] = Z
+        a1, a2, a3, a4 = ldtab.interpolate(p, axis_values=None, pixelgrid=None)
+        y =ytab.interpolate(p, axis_values=None, pixelgrid=None)
+        return a1, a2, a3, a4, y
+
+    def interpolate_ldy_from_DA(self, teff, logg, ldtab=None, ytab=None):
+        '''
+        interpolate limb-darknening coefficient, doppler beeming factor and gravity-darkening coefficient 
+        from Claret et al. 2020 of DA white dwarf models 
+        ##------------------------------------------------------------------------- 
+        from sdOB.utils.lyd import claret_tab 
+        fname = 'Claret_limb_gravity_beaming/2020/Gravity_limb-darkening/TABLE104C' 
+        # downloaded frome https://cdsarc.cds.unistra.fr/ftp/J/A+A/634/A93/OriginalTab.tar.gz
+        ldtab = claret_tab()
+        names, data = ldtab.read_tab2020(fname)
+        grid_pars = data[:, [0,1]].T
+        indc = [4+5*_ for _ in [0, 1, 2, 3, 6]]
+        grid_data = data[:, indc].T
+        _, _ = ldtab.create_pixeltypegrid(grid_pars=grid_pars, grid_data=grid_data)
+        
+        ##------------------------------------------------------------------------------
+        fname = 'Claret_limb_gravity_beaming/2020/Gravity_limb-darkening/TABLE105C' 
+        # downloaded from https://cdsarc.cds.unistra.fr/ftp/J/A+A/634/A93/OriginalTab.tar.gz
+        ytab = claret_tab()
+        names, data = ytab.read_tab2020(fname, skiprows=2, skipcolumns=3)
+        grid_pars = data[:, [0,1]].T
+        indc = [4+5*_ for _ in [0, 1]]
+        grid_data = data[:, indc].T
+        _, _ = ytab.create_pixeltypegrid(grid_pars=grid_pars, grid_data=grid_data)
+
+        paramters:
+        ---------------
+        teff, logg
+        returns:
+        a1, a2, a3, a4, y, bfac
+        ---------------
+        
+        '''
+        if type(teff) !=  np.ndarray: teff = np.array([teff])
+        if ldtab is None:
+           fname = '/home/lijiao/lijiao/Documents/Claret_limb_gravity_beaming/2020/Gravity_limb-darkening/TABLE104C' 
+           # downloaded frome https://cdsarc.cds.unistra.fr/ftp/J/A+A/634/A93/OriginalTab.tar.gz
+           
+           ldtab = claret_tab()
+           names, data = ldtab.read_tab2020(fname)
+           grid_pars = data[:, [0,1]].T
+           indc = [4+5*_ for _ in [0, 1, 2, 3, 6]]
+           grid_data = data[:, indc].T
+           _, _ = ldtab.create_pixeltypegrid(grid_pars=grid_pars, grid_data=grid_data)
+        if ytab is None:
+           fname = '/home/lijiao/lijiao/Documents/Claret_limb_gravity_beaming/2020/Gravity_limb-darkening/TABLE105C' 
+           # downloaded from https://cdsarc.cds.unistra.fr/ftp/J/A+A/634/A93/OriginalTab.tar.gz
+           ytab = claret_tab()
+           names, data = ytab.read_tab2020(fname, skiprows=2, skipcolumns=3)
+           grid_pars = data[:, [0,1]].T
+           indc = [4+5*_ for _ in [0, 1]]
+           grid_data = data[:, indc].T
+           _, _ = ytab.create_pixeltypegrid(grid_pars=grid_pars, grid_data=grid_data)
+            
+        p = np.ones((2, teff.shape[0]))
+        p[0] = logg
+        p[1] = teff
+        a1, a2, a3, a4, bfac = ldtab.interpolate(p, axis_values=None, pixelgrid=None)
+        y =ytab.interpolate(p, axis_values=None, pixelgrid=None)
+        return a1, a2, a3, a4, y, bfac
+
+
+
 
 class claret_tab():
 
@@ -151,6 +272,7 @@ class claret_tab():
        read and interpolate tables of limb and gravite-darkening coefficient of Claret
        examples:
        # limb darkening coefficient of TESS from LDCs DA models
+       from sdOB.utils.lyd import claret_tab
        fname = 'Gravity_limb-darkening/TABLE104C' # downloaded frome https://cdsarc.cds.unistra.fr/ftp/J/A+A/634/A93/OriginalTab.tar.gz
        ctab = claret_tab()
        names, data = ctab.read_tab2020(fname)
