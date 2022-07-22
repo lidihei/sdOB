@@ -1,5 +1,33 @@
 import numpy as np
 import lightkurve as lk
+from scipy.interpolate import CubicSpline
+
+def interpbyfoldlc(time, phase, flux, fluxerr, period=None, t0=0,  bc_type='natural'):
+    '''
+    iterpolate a light curve by using the soomth LC.
+    parameters:
+    time: [1D array] or the phase of light curve
+    phase: [1D array]
+    flux: [1D array]
+    fluxerr: [1D array]
+    period: [float] the period of a light curve, if phase = np.mod((time-t0)/period, 1)
+    returns:
+    y: [1D array] the flux of the given time
+    yerr: [1D array] the flux error of the given time
+    '''
+    _ind = np.argsort(phase)
+    time = time if period is None else np.mod((time-t0)/period, 1)
+    phase = phase[_ind]
+    flux = flux[_ind]
+    fluxerr = fluxerr[_ind]
+    phase = np.hstack((phase[:-1]-1, phase, phase[1:]+1))
+    flux = np.hstack((flux[:-1], flux, flux[1:]))
+    fluxerr2 = np.hstack((fluxerr[:-1], fluxerr, fluxerr[1:]))**2
+    func = CubicSpline(phase, flux ,bc_type='periodic')
+    funcerr2 = CubicSpline(phase, fluxerr2 ,bc_type='periodic')
+    y = func(time)
+    yerr = np.sqrt(funcerr2(time))
+    return y, yerr
 
 def hist_lc(time, flux, bins):
     '''smooth light curve by bins
