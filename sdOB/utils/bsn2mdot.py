@@ -1,3 +1,4 @@
+import numpy as np
 '''calculate mass loss rate by using bow shock nebula (Kobulnicky et al. 2017)
 '''
 

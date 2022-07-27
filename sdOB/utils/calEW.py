@@ -2,6 +2,12 @@
 
 import numpy as np
 from scipy.optimize import curve_fit
+from laspec import normalization
+from astropy.io import fits
+from  . import spec_tools as spect
+from . import time_tools as timet
+from astropy import units, constants
+from astropy.table import Table
 
 class calEW():
     
@@ -176,11 +182,13 @@ class ew_LBY(calEW):
         self.fluxerr = fluxerr
         return wave, flux, fluxerr
     
-    def read_lamostlrs_spec(self, fname):
+    def read_lamostlrs_specdr7(self, fname):
         '''
         returns:
         -------------
-        wave, flux, fluxerr, bjd, rv, rverr
+        wave: [in angstrom]  wavelength in air
+        flux
+        fluxerr
         '''
         hdu = fits.open(fname)
         wave = hdu[0].data[2]
@@ -189,7 +197,7 @@ class ew_LBY(calEW):
         hdu.close()
         header = hdu[0].header
         self.hdu = hdu
-        _ra, _dec, date_start, date_end = [_header[_] for _ in ('ra', 'dec', 'DATE-BEG', 'DATE-END')]
+        _ra, _dec, date_start, date_end = [header[_] for _ in ('ra', 'dec', 'DATE-BEG', 'DATE-END')]
         bjd, _ =  eval_ltt_lamost(_ra, _dec, date_start, date_end, barycorr=False)
         wave = spect.vacuum2air(wave)
         c = constants.c.to('km/s').value
@@ -201,8 +209,55 @@ class ew_LBY(calEW):
         self.flux = flux
         self.fluxerr = fluxerr
         return wave, flux, fluxerr
-    
+
+    def read_lamostlrs_specdr9(self, fname):
+        '''
+        returns:
+        wave: [in angstrom]  wavelength in air
+        flux
+        fluxerr
+        '''
+        hdu = fits.open(fname)
+        wave = hdu[1].data['wavelength'][0]
+        flux = hdu[1].data['flux'][0]
+        fluxerr = np.sqrt(1/hdu[1].data['IVAR'][0])
+        wave = spect.vacuum2air(wave)
+        flux_norm, flux_cont = normalization.normalize_spectrum_spline(wave, flux, niter=3)
+        header = hdu[0].header
+        _ra, _dec, date_start, date_end = [header[_] for _ in ('ra', 'dec', 'DATE-BEG', 'DATE-END')]
+        bjd, _ =  timet.eval_ltt_lamost(_ra, _dec, date_start, date_end, barycorr=False)
+        c = constants.c.to('km/s').value
+        self.bjd = bjd
+        self.rv = header['Z'] *c
+        self.rverr = header["Z_err"]*c
+        self.fname = fname
+        self.wave = wave
+        self.flux = flux
+        self.fluxerr = fluxerr
+        self.hdu = hdu
+        return wave, flux, fluxerr
+   
+    def normalizeflux(self, wave=None, flux=None, p=1e-06, q=0.5, lu=(-1, 3), binwidth=30, niter=5):
+        '''
+        parameters:
+        details see: from from laspec import normalization; normalization.normalize_spectrum_spline?
+        returns
+        ------------
+        flux_norm: noralized flux
+        flux_cont: continue flux 
+        '''
+        if wave is None: wave = self.wave
+        if flux is None: flux = self.flux
+        flux_norm, flux_cont = normalization.normalize_spectrum_spline(wave, flux, niter=3)
+        self.flux_norm = flux_norm
+        self.flux_cont = flux_cont
+        return flux_norm, flux_cont
+
     def getrvtab(self, fname=None, bjd=None, rv =None, rverr=None):
+        '''
+        returns:
+        tab: astropy.table
+        '''
         if fname is None: fname = self.fname
         if bjd is None: bjd = self.bjd
         if rv is None: rv = self. rv
@@ -212,12 +267,14 @@ class ew_LBY(calEW):
         tab= Table(data=data, names=names)
         return tab
     
-    def get_EW_NaD(self, p0=[-2, 5874., 2, 2, 5892, 2, 2, 5896, 1,  0,  0], show=True):
-        wave, flux, fluxerr = self.wave, self.flux, self.fluxerr
+    def get_EW_NaD(self, p0=[-2, 5874., 2, 2, 5892, 2, 2, 5896, 1,  0,  0], wave=None, flux=None, fluxerr = None, show=True):
+        if wave is None: wave = self.wave
+        if flux is None: flux = self.flux
+        if fluxerr is None: fluxerr = self.fluxerr
         _ind =(wave> 5810) & (wave < 6000)
         xobs, yobs, yerrobs = [_[_ind] for _ in [wave, flux, fluxerr]]
 
-        popt,pcov = self.fit_func(xobs, yobs, p0, func=ew.gauss3_linear, percentile=99, inters=1)
+        popt,pcov = self.fit_func(xobs, yobs, p0, func=self.gauss3_linear, percentile=99, inters=1)
         x = None # np.linspace(3930, 3944, 1000)
         popts = self.get_multivariate_normal(popt,pcov, size=1000)
         ews = np.zeros((3,2))
@@ -257,18 +314,20 @@ class ew_LBY(calEW):
         self._tab = _tab
         return tab
     
-    def get_EW_CaK(self, p0=[2, 3934, 2,  0,  0], x=None, show=True):
-        wave, flux, fluxerr = self.wave, self.flux, self.fluxerr
+    def get_EW_CaK(self, p0=[2, 3934, 2,  0,  0], x=None, wave=None, flux=None, fluxerr = None, show=True):
+        if wave is None: wave = self.wave
+        if flux is None: flux = self.flux
+        if fluxerr is None: fluxerr = self.fluxerr
         _ind =( (wave> 3910) & (wave < 3921)) | ((wave> 3930) & (wave < 3945))
         xobs, yobs, yerrobs = [_[_ind] for _ in [wave, flux, fluxerr]]
-        popt,pcov = self.fit_func(xobs, yobs, p0, func=ew.gauss_linear, percentile=99, inters=1)
+        popt,pcov = self.fit_func(xobs, yobs, p0, func=self.gauss_linear, percentile=99, inters=1)
         x = x # np.linspace(3930, 3944, 1000)
         popts = self.get_multivariate_normal(popt,pcov, size=1000)
         ews = np.zeros((1,2))
         
         ews[0] =self.EW_gauss_linear(*popts[[0,1,2, 9,10]], x=x)
         rvs = np.zeros((1,2))
-        rvs[0] = ew.dlambda2rv(popt[1], np.sqrt(pcov[1,1]), 3933.66)
+        rvs[0] = self.dlambda2rv(popt[1], np.sqrt(pcov[1,1]), 3933.66)
         
         linename = ['CaII K']
         line_lam = [3933.66]

@@ -2,6 +2,9 @@ from astropy.time import Time
 from PyAstronomy import pyasl
 from astropy import coordinates as coord
 from astropy import units as u
+import numpy as np
+
+
 def eval_ltt(ra=62.794724868, dec=50.7082235439, jd=2456326.4583333, site=None, kind='barycentric', barycorr=True):                                                                                                            
     """ evaluate the jd 
     parameters

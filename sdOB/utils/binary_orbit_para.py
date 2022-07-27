@@ -94,7 +94,7 @@ def M2m2(M, m1, maxiter=2000, x1=None):
        m2 = optimize.newton(f, 0,x1=x1, maxiter=maxiter, args=(M, m1))
     return m2
 
-def m1pkie2m2qa(m1, P, K1, i, e):
+def m1pkie2m2qa(m1, P, K1, i, e, x1=None):
     '''calculate mass ratio by using primary mass, obtial period and semi-amplitude of raidal velocity
     parameters
     -----------
@@ -103,6 +103,7 @@ def m1pkie2m2qa(m1, P, K1, i, e):
     K [velocity units] e.g. 10 * units.km/units.s
     i [degree]inclination angle
     e [float] eccentric
+    x1: [float] see scipy.optimize.newton
     return 
     ------
     q [float] mass ratio (m2/m1)
@@ -111,7 +112,7 @@ def m1pkie2m2qa(m1, P, K1, i, e):
     '''
     M, a1 = period2M(P, K1, i=i, e = e)
     M = M.to('Msun').value
-    m2 = M2m2(M, m1, maxiter=2000)
+    m2 = M2m2(M, m1, maxiter=2000, x1=x1)
     q = m2/m1
     a2 = a1/q
     a = a1+ a2
