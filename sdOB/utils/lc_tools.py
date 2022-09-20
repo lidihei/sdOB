@@ -1,6 +1,7 @@
 import numpy as np
 import lightkurve as lk
 from scipy.interpolate import CubicSpline
+from scipy.stats import bootstrap
 
 def interpbyfoldlc(time, phase, flux, fluxerr, period=None, t0=0,  bc_type='natural'):
     '''
@@ -149,3 +150,90 @@ def bin_foldlc2(lc, bins, per, tc0, method='median'):
     lcfoldbin = lk.LightCurve(time=time_bin, flux=fluxbin, flux_err=fluxbinerr)
     return lcfold, lcfoldbin, fluxmedian
 
+
+
+def smooth_bybin_bootstraperr(time, flux, bins, func=np.median, **arg):
+    '''smooth light curve by bins. The error is esitmated by bootstrap 
+    (details see https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html)
+    parameters:
+    -------------------
+    time: [array] could be phase
+    flux: [flux]
+    bins: [array]
+    func: [function] (e.g. np.mean, np.median)
+    returns:
+    -------------------
+    time_bins: [array] time_bins = (bins[1:] + bins[:-1])/2
+    fluxbin: [array]
+    fluxbinerr: [array]
+    '''
+    nbins = len(bins)-1
+    fluxbin = np.zeros(nbins)
+    fluxbinerr = np.zeros(nbins)
+    for i in np.arange(nbins):
+        _ind = (time > bins[i]) & (time < bins[i+1])
+        fluxbin[i] = func(flux[_ind])
+        res = bootstrap((flux[_ind],), func, confidence_level=0.68)
+        fluxbinerr[i] = res.standard_error
+    time_bin = (bins[1:] + bins[:-1])/2.
+    return time_bin, fluxbin, fluxbinerr
+
+
+def smooth_by_bin2(time, flux, bins, method='median', **arg):
+    '''smooth light curve by bins
+    parameters:
+    -------------------
+    time: [array] could be phase
+    flux: [flux]
+    bins: [array]
+    returns:
+    -------------------
+    time_bins: [array] time_bins = (bins[1:] + bins[:-1])/2
+    fluxbin: [array]
+    fluxbinerr: [array], if method is mean err = np.std(flux_in_bin)/np.sqrt(number_points_in_bin)
+                         if method is median err = 1.253*np.std(flux_in_bin)/np.sqrt(number_points_in_bin)
+    '''
+    nbins = len(bins)-1
+    fluxbin = np.zeros(nbins)
+    fluxbinerr = np.zeros(nbins)
+    #time_bin = np.zeros(nbins)
+    if method.lower() =='median':
+       for i in np.arange(nbins):
+           _ind = (time > bins[i]) & (time < bins[i+1])
+           fluxbin[i] = np.median(flux[_ind])
+           #print('median',fluxbin[i])
+           fluxbinerr[i] = 1.253*np.std(flux[_ind])/np.sqrt(len(flux[_ind])) # 1.253 = np.sqrt(np.pi/2)
+    else:
+       for i in np.arange(nbins):
+           _ind = (time > bins[i]) & (time < bins[i+1])
+           fluxbin[i] = np.mean(flux[_ind])
+           #print('mean', fluxbin[i])
+           fluxbinerr[i] = np.std(flux[_ind])/np.sqrt(len(flux[_ind]))
+    time_bin = (bins[1:] + bins[:-1])/2.
+    return time_bin, fluxbin, fluxbinerr
+
+
+def bin_foldlc3(lc, bins, per, tc0, smoothfunc=smooth_by_bin2, **arg):
+    '''bin the folded light curve
+    parameters:
+    lc: a light curve of lightkurve
+    bins: [array] an array which is used to bin the folded lc
+    per: [float] period
+    tc0: [float] zero phase time
+    returns:
+    lcfold: folded light curve
+    lcfoldbin
+    fluxmedian: [float]
+    '''
+    lcfold = lc.fold(per, tc0)
+    time = lcfold.time; flux = lcfold.flux
+    _time = np.hstack([time-1, time, time+1])
+    _flux = np.hstack([flux, flux, flux])
+    time_bin, fluxbin, fluxbinerr = smoothfunc(_time, _flux, bins, **arg)
+    fluxmedian = np.median(fluxbin)
+    fluxbin = fluxbin/fluxmedian
+    fluxbinerr = fluxbinerr/fluxmedian
+    lcfold.flux = lcfold.flux/fluxmedian
+    lcfold.flux_err = lcfold.flux_err/fluxmedian
+    lcfoldbin = lk.LightCurve(time=time_bin, flux=fluxbin, flux_err=fluxbinerr)
+    return lcfold, lcfoldbin, fluxmedian

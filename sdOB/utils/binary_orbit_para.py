@@ -144,7 +144,7 @@ def m1qperiod2sma(m1, q, period):
     '''calculate semi-major axis of the binary system by m1, mass ration (q = m2/m1) and obtial period. 𝑎3𝑛2=𝐺(𝑚1+𝑚2)
     parameters
     -----------
-    m1 [float] in solar mass e.g. 1*units.Msun
+    m1 [mass unit] in solar mass e.g. 1*units.Msun
     q [float] mass ratio (m2/m1)
     period [time units] period e.g. 1*units.day
     return 
@@ -155,6 +155,21 @@ def m1qperiod2sma(m1, q, period):
     n2 = (2*np.pi/period)**2
     sma = (constants.G * M/n2)**(1./3.)
     return sma
+
+
+def Msma2period(M, sma):
+    '''calculate orbital period by total mass and semi-major axis
+    parameters
+    -----------
+    M [mass unit] the total mass of binary M = m1+m2,  e.g. 1*units.Msun
+    sma [distance units] semi-major axis of the binary system, e.g. 10*units.Rsun
+    return 
+    period [time units] period
+    ------
+    '''
+    n = np.sqrt(constants.G * M/sma3)
+    period = 2*np.pi/n
+    return period
 
 
 def binarymassfunc(P, K1):
