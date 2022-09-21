@@ -104,10 +104,10 @@ def m1pkie2m2qa(m1, P, K1, i, e, x1=None):
     i [degree]inclination angle
     e [float] eccentric
     x1: [float] see scipy.optimize.newton
-    return 
+    returns
     ------
-    q [float] mass ratio (m2/m1)
     m2 [float] the secondary mass (in solar mass)
+    q [float] mass ratio (m2/m1)
     a [distance units] semi-major axis of the binary system
     '''
     M, a1 = period2M(P, K1, i=i, e = e)
