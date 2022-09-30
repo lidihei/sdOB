@@ -122,9 +122,9 @@ def RPvsini2incl(R, period, vsini):
     '''asumming synchronized, calculate inclination angle by radius of star(R), period of orbital and projected rotation velocity (vsini)
     parameters:
     --------------
-    R: [Rsun]
-    period: [day]
-    vsini: [km/s]
+    R: [Rsun] e.g. 0.9
+    period: [day] e.g. 1.5 
+    vsini: [km/s] e.g 77
     returns:
     ------------
     incl: [deg]
@@ -134,7 +134,7 @@ def RPvsini2incl(R, period, vsini):
     period = period*units.day
     vsini = vsini*units.km/units.s
     v = 2*np.pi*R/period
-    v = v.to('km/s')
+    v = v.to('km/s').value
     sini = vsini/v
     incl = np.arcsin(sini)
     incl = np.rad2deg(incl)
