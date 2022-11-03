@@ -2,6 +2,7 @@ from astropy import constants, units
 import numpy as np
 from scipy import optimize
 
+
 '''
 1. [orbital period](https://en.wikipedia.org/wiki/Semi-major_and_semi-minor_axes)
 2. [SPECTROSCOPIC BINARY STARS](https://phys.libretexts.org/Bookshelves/Astronomy__Cosmology/Book%3A_Celestial_Mechanics_(Tatum)/18%3A_Spectroscopic_Binary_Stars/18.01%3A_Introduction_to_Spectroscopic_Binary_Stars)
@@ -227,3 +228,28 @@ def eR_Rochelobe(q):
     q13 = q**(1./3.)
     r_L = 0.49*q23/(0.6*q23 + np.log(1+q13))
     return r_L
+
+def rsmaq2fillout_factor(requiv, sma, q, F=1, d=1, s=np.array([0., 0., 1.]), component=1 ):
+    '''
+    parameters:
+    -----------
+    * `requiv` (float): the equivalent radius
+    * `sma` (float): the semi-major axis of the orbit
+    * `q` (float): the mass-ratio in the frame of `component`.  If necessary,
+        call <phoebe.distortions.roche.q_for_component> first.
+    * `F` (float): the synchronicity parameter.
+    * `d` (float): instantaneous separation between the two components in the
+        orbit.
+    * `s` (array of length 3): rotation spin vector, in roche coordinates, at
+        the requested time.
+    * `component` (int, optional, default=1): whether the requested component
+        is the primary (1) or secondary (2) component. 
+    returns:
+    pot (float): the equipotential in the primary frame
+    FF (float): the fillout factor; FF = 0 corresponds to the semi-detached case, FF < 0 to the detached case, and FF ∈ (0, 1) to the contact case.
+    '''
+    from phoebe.distortions.roche import requiv_to_pot
+    from phoebe.constraints.builtin import pot_to_fillout_factor
+    pot = requiv_to_pot(requiv, sma, q, F, d, s=s, component=component)
+    FF = pot_to_fillout_factor(q, pot)
+    return pot, FF
