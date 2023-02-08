@@ -13,6 +13,21 @@ from scipy import ndimage
 import re
 
 
+'''
+example of regli
+x = np.arange(2,5)
+y = np.arange(1,10)
+xx, yy = np.meshgrid(x,y)
+
+X = np.ravel(xx)
+Y = np.ravel(yy)
+Z = X**2 + Y**2
+Z2 = X**3 + Y**2
+r = Regli.init_from_flats(np.array([X[:-1], Y[:-1]]).T, verbose=True)
+r.set_values(np.array([Z[:-1], Z2[:-1]]).T)
+r.interpn(np.array([2.5, 1]))
+'''
+
 def xgb_lyd(logTeff, logg, logZ, xi, model_dic = None):
     '''using xgboost model interpolate  a 4-parameter limb-darkening law (a1, a2, a3, a4) 
        and the gravity darkening coefficient (y).
@@ -44,7 +59,7 @@ class lydClaret():
 
     '''
     examples:
-    dire = '/home/lijiao/lijiao/limbdarkening/Claret'                                                                                                                       
+    dire = '/home/lijiao/lijiao/limbdarkening/Claret'
     fname_eq4 = os.path.join(dire, 'J_A+A_600_A30_table27.dat.gz.fits') # downlaod from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
     fname_y = os.path.join(dire, 'J_A+A_600_A30_table29.dat.gz.fits')
 
@@ -59,7 +74,7 @@ class lydClaret():
     _data = data[(data['Teff'] > 10000) & (data['Teff'] < 35000) & (data['logg'] < 5) & (data['logg'] > 3.5)]
     _data_y = data_y[(data_y['logTeff'] > 4) & (data_y['logTeff'] < np.log10(35000)) & (data_y['logg'] < 5) & (data_y['logg'] > 3.5)]
     lydd = lydClaret(_data, _data_y)
-    
+
     a1, a2, a3, a4, y = lydd.interpolate_lyd(np.log10(30000), 4, 0, 2)
 
 
