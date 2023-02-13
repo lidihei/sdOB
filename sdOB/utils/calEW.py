@@ -1,4 +1,4 @@
-# calculate equibalent width
+# calculate equivalent width
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -92,7 +92,7 @@ class calEW():
         '''
         ews = np.zeros_like(As)
         for _i, (A, mu, sigma, k, b) in enumerate(zip(As, mus, sigmas, ks, bs)):
-            ews[_i], _ = self. _EW_gauss_linear(A, mu, sigma, k, b, x=x)
+            ews[_i], _ = self._EW_gauss_linear(A, mu, sigma, k, b, x=x)
         ew = np.mean(ews)
         ew_err = np.std(ews)
         return ew, ew_err
@@ -353,6 +353,43 @@ class ew_LBY(calEW):
         return tab
 
 
+    def get_EW_line(self, p0=[2, 3934, 2,  0,  0], linename='CaII K', line=3933.66, ind=None, xlim = (3900, 4000), x=None, wave=None, flux=None, fluxerr = None, show=True):
+        if wave is None: wave = self.wave
+        if flux is None: flux = self.flux
+        if fluxerr is None: fluxerr = self.fluxerr
+        if ind is None: 
+            _ind =( (wave> 3910) & (wave < 3921)) | ((wave> 3930) & (wave < 3945))
+        else: _ind = ind
+        xobs, yobs, yerrobs = [_[_ind] for _ in [wave, flux, fluxerr]]
+        popt,pcov = self.fit_func(xobs, yobs, p0, func=self.gauss_linear, percentile=99, inters=1)
+        x = x # np.linspace(3930, 3944, 1000)
+        popts = self.get_multivariate_normal(popt,pcov, size=1000)
+        ews = np.zeros((1,2))
+        ews[0] =self.EW_gauss_linear(*popts, x=x)
+        rvs = np.zeros((1,2))
+        rvs[0] = self.dlambda2rv(popt[1], np.sqrt(pcov[1,1]), line)
+        linename = [linename]
+        line_lam = [line]
+        _tab = Table(data=[linename, line_lam, ews.T[0], ews.T[1], rvs.T[0], rvs.T[1]], 
+             names=('line', 'lambda_air', 'ew', 'ew_err', 'rv', 'rv_err'),
+            dtype=('<U10', 'f8', '<f4', '<f4', '<f4', '<f4'))
+        #names = np.ravel([[f'ew_{_}', f'ewerr_{_}', f'rv_{_}', f'rverr_{_}'] for _ in linename ])
+        #tab= Table(data=data, names=names, dtype=['<f4']*len(data))
+        self._tab = _tab
+        if show:
+           fig, ax = plt.subplots(1,1,figsize=(7,4))
+           plt.plot(wave, flux, color='b')
+           plt.plot(xobs, yobs, '.')
+           plt.axvline(x=line)
+           plt.xlim(xlim)
+           #plt.ylim(17, 24)
+           plt.show() 
+           self.plotresault(xdens=None)
+           plt.sca(self.axs[0])
+           plt.plot(wave, flux, color='b', lw=0.7)
+           #plt.title(r'$EW = 'f'{_ew:.4f}\pm{ewerr:.4f}''\AA$\n'r' $rv_{CaII K}$'f' = {rv_cak:.2f}'r'$\pm$'f'{rverr_cak:.2f} km/s')
+           plt.xlim(xlim)
+        return _tab
 
 
         
