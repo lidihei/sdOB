@@ -1,6 +1,7 @@
 from astropy import constants, units
 import numpy as np
 from scipy import optimize
+from .math import cubicequation_solution
 
 
 '''
@@ -71,8 +72,8 @@ def period2M(P, K1, i=90, e = 0):
     M = n**2 * a1**3/constants.G
     return M, a1
 
-def M2m2(M, m1, maxiter=2000, x1=None):
-    ''' calculate m2 by using M and m1
+def M2m2_newton(M, m1, maxiter=2000, x1=None):
+    ''' calculate m2 by using M and m1 with Newton iteration method
     parameters
     ------------
     M [float] the total mass (m1+m2) e.g. 1
@@ -95,8 +96,30 @@ def M2m2(M, m1, maxiter=2000, x1=None):
        m2 = optimize.newton(f, 0,x1=x1, maxiter=maxiter, args=(M, m1))
     return m2
 
-def m1pkie2m2qa(m1, P, K1, i, e, x1=None):
-    '''calculate mass ratio by using primary mass, obtial period and semi-amplitude of raidal velocity
+def M2m2(M, m1):
+    ''' calculate m2 by using M and m1 with cubic equation solution
+    parameters
+    ------------
+    M [float] the total mass (m1+m2) e.g. 1
+    m1 [float] e.g. 1
+    maxiter [int] the iteration of Newton method
+    x1: [float] see scipy.optimize.newton
+    return
+    ------
+    m2 [float] mass of the secondary
+    '''
+    def f(x, M, m1):
+        y = x**3 - M*x**2 - 2*M*m1*x - M*m1**2
+        return y
+    a = 1; b = -M; c = -2*M*m1; d = - M*m1**2
+    xs = np.array(cubicequation_solution(a, b, c, d))
+    _ind = np.isreal(xs) & (xs>0)
+    m2 = np.real(xs[_ind])
+    return m2
+
+
+def m1pkie2m2qa_newton(m1, P, K1, i, e, x1=None):
+    '''calculate mass ratio by using primary mass, obtial period and semi-amplitude of raidal velocity ( Newton iteration method)
     parameters
     -----------
     m1 [float] in solar mass e.g. 1
@@ -113,11 +136,37 @@ def m1pkie2m2qa(m1, P, K1, i, e, x1=None):
     '''
     M, a1 = period2M(P, K1, i=i, e = e)
     M = M.to('Msun').value
-    m2 = M2m2(M, m1, maxiter=2000, x1=x1)
+    m2 = M2m2_newton(M, m1, maxiter=2000, x1=x1)
     q = m2/m1
     a2 = a1/q
     a = a1+ a2
     return m2, q, a.to('Rsun')
+
+
+def m1pkie2m2qan(m1, P, K1, i, e):
+    '''calculate mass ratio by using primary mass, obtial period and semi-amplitude of raidal velocity (cubic equation solution)
+    parameters
+    -----------
+    m1 [float] in solar mass e.g. 1
+    P [time units] period e.g. 1*units.day
+    K [velocity units] e.g. 10 * units.km/units.s
+    i [degree]inclination angle
+    e [float] eccentric
+    x1: [float] see scipy.optimize.newton
+    returns
+    ------
+    m2 [float] the secondary mass (in solar mass)
+    q [float] mass ratio (m2/m1)
+    a [distance units] semi-major axis of the binary system
+    '''
+    M, a1 = period2M(P, K1, i=i, e = e)
+    M = M.to('Msun').value
+    m2 = M2m2_newton(M, m1)
+    q = m2/m1
+    a2 = a1/q
+    a = a1+ a2
+    return m2, q, a.to('Rsun')
+
 
 def RPvsini2incl(R, period, vsini):
     '''asumming synchronized, calculate inclination angle by radius of star(R), period of orbital and projected rotation velocity (vsini)
