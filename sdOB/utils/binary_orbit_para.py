@@ -143,7 +143,7 @@ def m1pkie2m2qa_newton(m1, P, K1, i, e, x1=None):
     return m2, q, a.to('Rsun')
 
 
-def m1pkie2m2qan(m1, P, K1, i, e):
+def m1pkie2m2qa(m1, P, K1, i, e):
     '''calculate mass ratio by using primary mass, obtial period and semi-amplitude of raidal velocity (cubic equation solution)
     parameters
     -----------
@@ -161,7 +161,7 @@ def m1pkie2m2qan(m1, P, K1, i, e):
     '''
     M, a1 = period2M(P, K1, i=i, e = e)
     M = M.to('Msun').value
-    m2 = M2m2_newton(M, m1)
+    m2 = M2m2(M, m1)
     q = m2/m1
     a2 = a1/q
     a = a1+ a2
