@@ -168,6 +168,24 @@ def m1pkie2m2qa(m1, P, K1, i, e):
     return m2, q, a.to('Rsun')
 
 
+def PRincl2vsini(period, R, incl=None, sini=None):
+    ''' calculate vsini by using period, stellar radius and inclination.
+    parameters:
+    --------------
+    R: [Rsun] e.g. 0.9
+    period: [day] e.g. 1.5 
+    incl: [deg]
+    sini: [float]  [0, 1]
+    returns:
+    ------------
+    vrotation: [float] in km/s
+    vsini: [float] in km/s e.g 77
+    '''
+    if sini is None: sini = np.sin(np.rad2deg(incl))
+    vrotation = 50.592732 * R/period
+    vsini = vrotation*sini
+    return vrotation, vsini
+
 def RPvsini2incl(R, period, vsini):
     '''asumming synchronized, calculate inclination angle by radius of star(R), period of orbital and projected rotation velocity (vsini)
     parameters:
