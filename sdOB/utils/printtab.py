@@ -31,3 +31,14 @@ def printmstd3(x, precision=3):
     stri = '$'f'{xm:.{num}f}''\pm'f'{error:.{num}f}''$'
     #print(stri)
     return stri
+
+def printmstd3(x, precision=3):
+    '''
+    returns: stri   (x \pm error)
+    '''
+    num = precision
+    xm = np.nanmean(x)
+    error = np.nanstd(x)
+    stri = '$'f'{xm:.{num}f}''\pm'f'{error:.{num}f}''$'
+    #print(stri)
+    return stri

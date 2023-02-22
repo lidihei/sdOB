@@ -181,7 +181,7 @@ def PRincl2vsini(period, R, incl=None, sini=None):
     vrotation: [float] in km/s
     vsini: [float] in km/s e.g 77
     '''
-    if sini is None: sini = np.sin(np.rad2deg(incl))
+    if sini is None: sini = np.sin(np.deg2rad(incl))
     vrotation = 50.592732 * R/period
     vsini = vrotation*sini
     return vrotation, vsini
@@ -200,7 +200,6 @@ def RPvsini2incl(R, period, vsini):
     '''
     R = R*units.Rsun
     period = period*units.day
-    vsini = vsini*units.km/units.s
     v = 2*np.pi*R/period
     v = v.to('km/s').value
     sini = vsini/v
