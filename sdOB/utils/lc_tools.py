@@ -163,7 +163,7 @@ def smooth_bybin_bootstraperr(time, flux, bins, func=np.median, **arg):
     func: [function] (e.g. np.mean, np.median)
     returns:
     -------------------
-    time_bins: [array] time_bins = (bins[1:] + bins[:-1])/2
+    time_bin: [array] time_bins = (bins[1:] + bins[:-1])/2
     fluxbin: [array]
     fluxbinerr: [array]
     '''
@@ -171,7 +171,7 @@ def smooth_bybin_bootstraperr(time, flux, bins, func=np.median, **arg):
     fluxbin = np.zeros(nbins)
     fluxbinerr = np.zeros(nbins)
     for i in np.arange(nbins):
-        _ind = (time > bins[i]) & (time < bins[i+1])
+        _ind = (time >= bins[i]) & (time < bins[i+1])
         fluxbin[i] = func(flux[_ind])
         res = bootstrap((flux[_ind],), func, confidence_level=0.68)
         fluxbinerr[i] = res.standard_error
@@ -237,3 +237,22 @@ def bin_foldlc3(lc, bins, per, tc0, smoothfunc=smooth_by_bin2, **arg):
     lcfold.flux_err = lcfold.flux_err/fluxmedian
     lcfoldbin = lk.LightCurve(time=time_bin, flux=fluxbin, flux_err=fluxbinerr)
     return lcfold, lcfoldbin, fluxmedian
+
+def bin_foldlc4(time, flux, phasebins, per, t0, smoothfunc=smooth_by_bin2, **arg):
+    '''bin the folded light curve
+    parameters:
+    time: [arrry] a light curve of lightkurve
+    flux: [array]
+    phasebins: [array] an array which is used to bin the folded lc
+    per: [float] period
+    tc0: [float] zero phase time
+    returns:
+    time_bin: [array] time_bins = (bins[1:] + bins[:-1])/2
+    fluxbin: [array]
+    fluxbinerr: [array]
+    '''
+    time = np.mod((time-t0)/per, 1)
+    time = np.hstack([time-1, time, time+1])
+    flux = np.hstack([flux, flux, flux])
+    time_bin, fluxbin, fluxbinerr = smoothfunc(time, flux, phasebins, **arg)
+    return time_bin, fluxbin, fluxbinerr
