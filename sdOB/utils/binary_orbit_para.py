@@ -58,6 +58,27 @@ def pm1k1qe2sini(P, m1, K1, q, e):
     sini = K1/K0.to('km/s').value
     return sini
 
+
+def m1qpk1e2incl(m1,q, P, K1, e):
+     '''calculate inclination
+    parameters
+    -----------
+    m1 [float] in solar mass e.g. 1
+    q  [float] q = m2/m1
+    P [float] period in unit of day e.g. 1
+    K1 [float] semi-amplitude of star1 radial velocity in unit of km/s
+    e [float] eccentric
+    returns
+    ---------
+    sini
+    incl [degree]inclination angle
+    '''
+    sma = (m1*(1 + q)* per**2)**(1/3) * 4.2082783
+    sini = K1/(sma1/P/np.sqrt(1-e**2)*50.592732)
+    incl = np.rad2deg(np.arcsin(sini))
+    return sini, incl
+
+
 def period2M(P, K1, i=90, e = 0):
     '''calculate M by using period and amplitude of raidal velocity
     parameters
