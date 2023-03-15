@@ -124,4 +124,16 @@ def Rlogg2M(R, logg):
     M = g* R**2/constants.G
     return M.to('Msun').value
 
-
+def LR2T(L, R):
+    '''
+    parameters:
+    L [float]  in Lsun
+    R [float] in  Rsun
+    returns:
+    Teff [float] in K
+    '''
+    L = L * units.Lsun
+    sigma = constants.sigma_sb
+    R = R*units.Rsun
+    Teff = (L/(4*np.pi*sigma*R**2))**(0.25)
+    return Teff.to('K').value
