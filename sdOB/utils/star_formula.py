@@ -62,23 +62,6 @@ def M2Teff(M):
     return Teff.to('K')
 
 
-def MR2logg(M, R):
-    '''calculate log gravity from main sequence star mass and radius
-    parameter:
-    ----------
-    M [float] in solar mass
-    R [float] in solar radius
-    returns:
-    ----------
-    logg [float] log(cm/s2)
-    '''
-    R = R*units.Rsun
-    M = M*units.Msun
-    g = constants.G * M/R**2
-    logg = np.log10(g.to('cm/s2').value)
-    return logg
-
-
 def RT2L(R, T):
     '''calculate log gravity from main sequence star mass and radius
     parameter:
@@ -108,6 +91,21 @@ def LT2R(L, T):
     R = np.sqrt(L/(4*np.pi*sigma*T**4))
     return R.to('Rsun').value
 
+def LR2T(L, R):
+    '''
+    parameters:
+    L [float]  in Lsun
+    R [float] in  Rsun
+    returns:
+    Teff [float] in K
+    '''
+    L = L * units.Lsun
+    sigma = constants.sigma_sb
+    R = R*units.Rsun
+    Teff = (L/(4*np.pi*sigma*R**2))**(0.25)
+    return Teff.to('K').value
+
+
 def Rlogg2M(R, logg):
     '''calculate stellar mass by stellar radius and logg
     parameters:
@@ -124,16 +122,36 @@ def Rlogg2M(R, logg):
     M = g* R**2/constants.G
     return M.to('Msun').value
 
-def LR2T(L, R):
-    '''
+def Mlogg2R(M, logg):
+    '''calculate stellar mass by stellar radius and logg
     parameters:
-    L [float]  in Lsun
-    R [float] in  Rsun
+    -----------
+    R:[float] stellar radius
+    logg: [float] effective gravity
+    
     returns:
-    Teff [float] in K
+    ---------
+    M: stellar mass
     '''
-    L = L * units.Lsun
-    sigma = constants.sigma_sb
+    R = R * units.Rsun
+    g = 10**logg * units.cm/units.s**2
+    R = np.sqrt(M*constants.G/g)
+    return R.to('Rsun').value
+
+def MR2logg(M, R):
+    '''calculate log gravity from main sequence star mass and radius
+    parameter:
+    ----------
+    M [float] in solar mass
+    R [float] in solar radius
+    returns:
+    ----------
+    logg [float] log(cm/s2)
+    '''
     R = R*units.Rsun
-    Teff = (L/(4*np.pi*sigma*R**2))**(0.25)
-    return Teff.to('K').value
+    M = M*units.Msun
+    g = constants.G * M/R**2
+    logg = np.log10(g.to('cm/s2').value)
+    return logg
+
+
