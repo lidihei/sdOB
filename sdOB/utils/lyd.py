@@ -60,7 +60,7 @@ class lydClaret():
     '''
     examples:
     dire = '/home/lijiao/lijiao/limbdarkening/Claret'
-    fname_eq4 = os.path.join(dire, 'J_A+A_600_A30_table27.dat.gz.fits') # downlaod from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
+    fname_eq4 = os.path.join(dire, 'J_A+A_600_A30_table28.dat.gz.fits') # downlaod from https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/600/A30#/browse
     fname_y = os.path.join(dire, 'J_A+A_600_A30_table29.dat.gz.fits')
 
     hdulist_eq4 = fits.open(fname_eq4)
@@ -92,7 +92,7 @@ class lydClaret():
         (a1 = eLSM, a2 = fLSM, a3=ePCM, a4=fPCM)
         parameters:
         -------------
-        grid_eq4: [FITS_rec], the grid of 4-parameter limb-darkening law, e.g. grideq4 = fits.getdata('J_A+A_600_A30_table27.dat.gz.fits')
+        grid_eq4: [FITS_rec], the grid of 4-parameter limb-darkening law, e.g. grideq4 = fits.getdata('J_A+A_600_A30_table28.dat.gz.fits')
         grid_y: [FITS_rec], the grid of the gravity darkening coefficient, e,g, grid_y = fits.getdata('J_A+A_600_A30_table29.dat.gz.fits')
         '''
         if grid_eq4 is not None:
@@ -101,10 +101,10 @@ class lydClaret():
            pointseq4[:, 1] = grid_eq4['logg']
            pointseq4[:, 2] = grid_eq4['Z']
            pointseq4[:, 3] = grid_eq4['xi']
-           self.grida1 = grid_eq4['eLSM']
-           self.grida2 = grid_eq4['fLSM']
-           self.grida3 = grid_eq4['ePCM']
-           self.grida4 = grid_eq4['fPCM']
+           self.grida1 = grid_eq4['a1LSM']
+           self.grida2 = grid_eq4['a2LSM']
+           self.grida3 = grid_eq4['a3PCM']
+           self.grida4 = grid_eq4['a4PCM']
            self.pointseq4 = pointseq4
         if grid_eq4 is not None:
            pointsy = np.zeros((len(grid_y), 4))
@@ -117,7 +117,7 @@ class lydClaret():
 
     def interpolate_lyd(self, logTe, logg, Z, Xi, **keywords):
         '''interpolate coefficients for a 4-parameter limb-darkening law (Claret 2017)
-        (a1 = eLSM, a2 = fLSM, a3=ePCM, a4=fPCM)
+        (a1 = a1LSM, a2 = a2LSM, a3=a3LSM, a4=a4LCM)
         parameters:
         -------------
         logTe, logg, Z, Xi
@@ -602,7 +602,7 @@ class claret_tab():
 
 if __name__ == '__main__':
   dire = '/home/lijiao/lijiao/limbdarkening/Claret'
-  fname_eq4 = os.path.join(dire, 'J_A+A_600_A30_table27.dat.gz.fits')
+  fname_eq4 = os.path.join(dire, 'J_A+A_600_A30_table28.dat.gz.fits')
   fname_y = os.path.join(dire, 'J_A+A_600_A30_table29.dat.gz.fits')
 
   hdulist_eq4 = fits.open(fname_eq4)
