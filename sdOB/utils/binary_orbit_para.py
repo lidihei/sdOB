@@ -260,7 +260,7 @@ def Msma2period(M, sma):
     return period
 
 
-def binarymassfunc(P, K1):
+def binarymassfunc(P, K1, ecc = 0):
     '''$f = \frac{M^3_2\sin^3i}{(M_1+M_2)^2} = \frac{P_{\rm orb} K_1^3}{2\pi G}$
     parameters:
     --------------
@@ -270,7 +270,8 @@ def binarymassfunc(P, K1):
     --------------
     f: [mass units (Msun)] the binary mass function
     '''
-    f = P*K1**3/2/np.pi/constants.G
+    efac = (1-ecc**2)**(1.5)
+    f = P*K1**3/2/np.pi/constants.G*efac
     return f.to('Msun')
 
 
