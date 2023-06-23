@@ -255,6 +255,7 @@ def Msma2period(M, sma):
     period [time units] period
     ------
     '''
+    sma3 = sma**3
     n = np.sqrt(constants.G * M/sma3)
     period = 2*np.pi/n
     return period
