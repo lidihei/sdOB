@@ -87,6 +87,10 @@ def period2M(P, K1, i=90, e = 0):
     K [velocity units] e.g. 10 * units.km/units.s
     i [degree]inclination angle
     e [float] eccentric
+    returns:
+    -------------
+    M : binary mass function
+    a1: semi-axis amplitude of star1
     '''
     n = 2*np.pi/P
     a1 = K1*np.sqrt(1-e**2)/(n*np.sin(np.deg2rad(i)))
@@ -97,7 +101,7 @@ def M2m2_newton(M, m1, maxiter=2000, x1=None):
     ''' calculate m2 by using M and m1 with Newton iteration method
     parameters
     ------------
-    M [float] the total mass (m1+m2) e.g. 1
+    M [float] the binary mass function e.g. 1
     m1 [float] e.g. 1
     maxiter [int] the iteration of Newton method
     x1: [float] see scipy.optimize.newton
@@ -121,7 +125,7 @@ def M2m2(M, m1):
     ''' calculate m2 by using M and m1 with cubic equation solution
     parameters
     ------------
-    M [float] the total mass (m1+m2) e.g. 1
+    M [float] the binary mass function e.g. 1
     m1 [float] e.g. 1
     maxiter [int] the iteration of Newton method
     x1: [float] see scipy.optimize.newton
@@ -162,6 +166,30 @@ def m1pkie2m2qa_newton(m1, P, K1, i, e, x1=None):
     a2 = a1/q
     a = a1+ a2
     return m2, q, a.to('Rsun')
+
+def m2pk1ie2m1(m2, P, K1, i, e):
+    '''
+    calculate star1 mass by using star2 mass and semi-amplitude of raidal velocity of star1
+    paramters:
+    -------------
+    m2 [float] in solar mass e.g. 1
+    P [time units] period e.g. 1*units.day
+    K1 [velocity units] e.g. 10 * units.km/units.s
+    i [degree]inclination angle
+    e [float] eccentric
+    returns:
+    -----------
+    m2 [float] the secondary mass (in solar mass)
+    q [float] mass ratio (m2/m1)
+    a [distance units] semi-major axis of the binary system
+    '''
+    M, a1 = period2M(P, K1, i=i, e = e)
+    M = M.to('Msun').value
+    m1 = np.sqrt((m2**3/M)) - m2
+    q = m2/m1
+    a2 = a1/q
+    a = a1+ a2
+    return m1, q, a.to('Rsun') 
 
 
 def m1pkie2m2qa(m1, P, K1, i, e):
