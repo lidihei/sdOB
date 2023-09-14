@@ -358,7 +358,7 @@ class claret_tab():
         data = data.reshape((reshape))
         indc = list(np.arange(skipcolumns))
         for _i in np.arange(skiprows):
-           indc += list(np.arange(skipcolumns, 8)+_i*8)
+           indc += list(np.arange(skipcolumns, shape[1])+_i*shape[1])
         data = data[:, indc]
         indpars = list(np.arange(skipcolumns))
         self.grid_pars = data[:, indpars].T
