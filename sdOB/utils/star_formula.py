@@ -133,7 +133,7 @@ def Mlogg2R(M, logg):
     ---------
     M: stellar mass
     '''
-    R = R * units.Rsun
+    M = M * units.Rsun
     g = 10**logg * units.cm/units.s**2
     R = np.sqrt(M*constants.G/g)
     return R.to('Rsun').value
