@@ -126,14 +126,14 @@ def Mlogg2R(M, logg):
     '''calculate stellar mass by stellar radius and logg
     parameters:
     -----------
-    R:[float] stellar radius
-    logg: [float] effective gravity
+    M: [float] stellar mass e.g. 1
+    logg: [float] effective gravity e.g. 4.5
     
     returns:
     ---------
-    M: stellar mass
+    R:[float] stellar radius
     '''
-    M = M * units.Rsun
+    M = M * units.Msun
     g = 10**logg * units.cm/units.s**2
     R = np.sqrt(M*constants.G/g)
     return R.to('Rsun').value
