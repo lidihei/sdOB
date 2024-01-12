@@ -303,6 +303,33 @@ def binarymassfunc(P, K1, ecc = 0):
     f = P*K1**3/2/np.pi/constants.G*efac
     return f.to('Msun')
 
+def Pm1qincle2K(P, m1, q, incl, e=0):
+    '''
+    derive K from P, m1, q, ecc, inclination
+    $\frac{PK1^3}{2\piG}(1-e^2)^(3/2) = \frac{M^3_2\sin^3i}{(M_1+M_2)^2}$
+    parameters:
+    ---------------
+    P: [float] period, in unit of day e.g.1
+    m1: [float] in unit of Msun e.g.1
+    q: [float] q = m2/m1
+    incl: [float] in unit of degree e.g. 90
+    e: [float] eccentric
+    returns:
+    --------------
+    K1, K2 in units of km/s
+    '''
+    P = P*units.day
+    m1 = m1*units.Msun
+    m2 = m1*q
+    incl = np.deg2rad(incl)
+    sini = np.sin(incl)
+    pfac = (2*np.pi*constants.G/P)**(1/3)
+    efac = np.sqrt(1-e*e)
+    K1 = m2*sini*pfac/(m1+m2)**(2/3)/efac
+    K1 = K1.to('km/s').value
+    K2 = K1/q
+    return K1, K2
+
 
 def m1bftom2(m1, bf, i=90, maxiter=2000, x1=None):
     ''' calculate m2 by using m1 and binary mass functon
